@@ -52,6 +52,9 @@ def _keyboard_listener() -> None:
             ready, _, _ = select.select([sys.stdin], [], [], 0.1)
             if ready:
                 ch = sys.stdin.read(1)
+                if not ch:
+                    _quit_flag.set()
+                    break
                 if ch in ("q", "\x03"):
                     _quit_flag.set()
                 elif ch == "r":
@@ -261,7 +264,7 @@ def _stats_view(conn: sqlite3.Connection) -> Layout:
                 COALESCE(SUM(input_tokens), 0) as total_in,
                 COALESCE(SUM(output_tokens), 0) as total_out
             FROM turn_metrics
-            WHERE agent_id=? AND date(timestamp)='""" + datetime.now(timezone.utc).strftime("%Y-%m-%d") + """'
+            WHERE agent_id=? AND date(timestamp)=date('now')
             """,
             (agent,),
         ).fetchone()

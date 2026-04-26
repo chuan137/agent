@@ -162,7 +162,7 @@ async def mark_messages_read(agent_id: str, message_ids: list[int]) -> str:
     db = get_db()
     placeholders = ",".join("?" * len(message_ids))
     with _write_lock:
-        db.execute(
+        cur = db.execute(
             f"UPDATE messages SET read_at=strftime('%Y-%m-%dT%H:%M:%fZ','now') "
             f"WHERE id IN ({placeholders}) AND to_agent=?",
             (*message_ids, agent_id),
@@ -170,7 +170,7 @@ async def mark_messages_read(agent_id: str, message_ids: list[int]) -> str:
         db.commit()
 
     _record_tool_metric(agent_id, "mark_messages_read", int((time.monotonic() - t0) * 1000))
-    return json.dumps({"ok": True, "marked": len(message_ids)})
+    return json.dumps({"ok": True, "marked": cur.rowcount})
 
 
 @mcp.tool()
@@ -260,11 +260,10 @@ async def report_turn_end(
 ) -> str:
     """Call at the end of a turn with token counts. Completes the turn_metrics record."""
     t0 = time.monotonic()
-    _update_agent_status(agent_id)
 
     db = get_db()
     with _write_lock:
-        db.execute(
+        cur = db.execute(
             """
             UPDATE turn_metrics
             SET turn_duration_ms = CAST(
@@ -278,7 +277,7 @@ async def report_turn_end(
             (input_tokens, output_tokens, turn_id, agent_id),
         )
         db.commit()
-        changed = db.total_changes
+        changed = cur.rowcount
 
     _record_tool_metric(agent_id, "report_turn_end", int((time.monotonic() - t0) * 1000))
 
