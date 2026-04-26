@@ -140,7 +140,7 @@ async def read_messages(
     params: list = [agent_id]
     if unread_only:
         query += " AND read_at IS NULL"
-    query += " ORDER BY created_at DESC LIMIT ?"
+    query += " ORDER BY created_at DESC, id DESC LIMIT ?"
     params.append(limit)
 
     rows = db.execute(query, params).fetchall()
