@@ -149,10 +149,18 @@ class TestMarkMessagesRead:
         await server.mark_messages_read("b", [r1["message_id"]])
 
         result = json.loads(await server.mark_messages_read("b", [r1["message_id"], r2["message_id"]]))
-        # r1 already read — UPDATE WHERE read_at IS NULL would skip it, but
-        # our query doesn't filter on read_at, so both match; r1 gets
-        # re-stamped. rowcount == 2.
-        assert result["marked"] == 2
+        # r1 already read — skipped by AND read_at IS NULL; only r2 marked.
+        assert result["marked"] == 1
+
+    async def test_idempotent(self, db_path):
+        r = json.loads(await server.send_message("a", "b", "task", "hi"))
+        msg_id = r["message_id"]
+        await server.mark_messages_read("b", [msg_id])
+        first_read_at = _rows(db_path, "messages")[0]["read_at"]
+
+        await server.mark_messages_read("b", [msg_id])
+        second_read_at = _rows(db_path, "messages")[0]["read_at"]
+        assert first_read_at == second_read_at
 
 
 # ---------------------------------------------------------------------------

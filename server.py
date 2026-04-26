@@ -164,7 +164,7 @@ async def mark_messages_read(agent_id: str, message_ids: list[int]) -> str:
     with _write_lock:
         cur = db.execute(
             f"UPDATE messages SET read_at=strftime('%Y-%m-%dT%H:%M:%fZ','now') "
-            f"WHERE id IN ({placeholders}) AND to_agent=?",
+            f"WHERE id IN ({placeholders}) AND to_agent=? AND read_at IS NULL",
             (*message_ids, agent_id),
         )
         db.commit()
