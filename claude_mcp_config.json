@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "agent-comms": {
+      "command": "python3",
+      "args": ["/home/chuan/mcp/server.py"],
+      "env": {
+        "AGENT_DB_PATH": "/home/chuan/mcp/data/agent_comms.db"
+      }
+    }
+  }
+}
