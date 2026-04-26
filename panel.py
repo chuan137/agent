@@ -126,30 +126,72 @@ def _agent_status_table(conn: sqlite3.Connection) -> Table:
     return table
 
 
+def fetch_unread_counts(conn: sqlite3.Connection) -> list[dict]:
+    """Return unread message counts grouped by (from_agent, to_agent, type).
+
+    Each dict has: from_agent, to_agent, type, cnt, oldest_created_at.
+    oldest_created_at is the earliest unread message in that group — used to
+    compute escalate age for colouring.
+    """
+    rows = conn.execute(
+        """
+        SELECT from_agent, to_agent, type, COUNT(*) as cnt,
+               MIN(created_at) as oldest_created_at
+        FROM messages WHERE read_at IS NULL
+        GROUP BY from_agent, to_agent, type
+        ORDER BY CASE type WHEN 'escalate' THEN 0 WHEN 'result' THEN 1 ELSE 2 END,
+                 cnt DESC
+        """
+    ).fetchall()
+    return [dict(r) for r in rows]
+
+
+def _escalate_style(oldest_created_at: Optional[str], now: datetime) -> tuple[str, str]:
+    """Return (rich_style, prefix) for an escalate row based on how long it has been unread.
+
+    <2 min  → bright_red, no prefix   (new)
+    2–10 min → red, no prefix          (building up)
+    >10 min  → bold red, '!! '         (stale / needs attention)
+    """
+    if not oldest_created_at:
+        return "red", ""
+    try:
+        dt = datetime.fromisoformat(oldest_created_at.replace("Z", "+00:00"))
+        age_secs = (now - dt).total_seconds()
+    except (ValueError, OSError):
+        return "red", ""
+
+    if age_secs > 600:
+        return "bold red", "!! "
+    if age_secs > 120:
+        return "red", ""
+    return "bright_red", ""
+
+
 def _messages_table(conn: sqlite3.Connection) -> Table:
     table = Table(title="Unread Messages", show_header=True, header_style="bold cyan", border_style="dim")
     table.add_column("Route")
     table.add_column("Type")
     table.add_column("Count", justify="right")
+    table.add_column("Age")
 
-    rows = conn.execute(
-        """
-        SELECT from_agent, to_agent, type, COUNT(*) as cnt
-        FROM messages WHERE read_at IS NULL
-        GROUP BY from_agent, to_agent, type
-        ORDER BY type DESC, cnt DESC
-        """
-    ).fetchall()
+    rows = fetch_unread_counts(conn)
+    now = datetime.now(timezone.utc)
 
     for row in rows:
         route = f"{row['from_agent']} → {row['to_agent']}"
         msg_type = row["type"]
         count = str(row["cnt"])
-        style = "bold red" if msg_type == "escalate" else ""
-        table.add_row(route, msg_type, count, style=style)
+        age = _format_elapsed(row["oldest_created_at"])
+
+        if msg_type == "escalate":
+            style, prefix = _escalate_style(row["oldest_created_at"], now)
+            table.add_row(route, prefix + msg_type, count, age, style=style)
+        else:
+            table.add_row(route, msg_type, count, age)
 
     if not rows:
-        table.add_row("[dim]no unread messages[/dim]", "", "")
+        table.add_row("[dim]no unread messages[/dim]", "", "", "")
 
     return table
 
