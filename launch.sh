@@ -11,7 +11,7 @@ export AGENT_DB_PATH="$DB_PATH"
 
 # Initialize the database if it doesn't exist yet.
 if [ ! -f "$DB_PATH" ]; then
-  python3 "$DIR/init_db.py"
+  uv run --project "$DIR" agent-comms-init-db
 fi
 
 if tmux has-session -t "$SESSION" 2>/dev/null; then
@@ -39,7 +39,7 @@ tmux send-keys -t "$SESSION:agent_b" \
 # Window 3: status dashboard (starts immediately)
 tmux new-window -t "$SESSION" -n "status"
 tmux send-keys -t "$SESSION:status" \
-  "export AGENT_DB_PATH='$DB_PATH' && python3 '$DIR/panel.py'" Enter
+  "export AGENT_DB_PATH='$DB_PATH' && uv run --project '$DIR' agent-comms-panel" Enter
 
 # Focus agent_a on attach
 tmux select-window -t "$SESSION:agent_a"

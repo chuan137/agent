@@ -3,7 +3,7 @@ import os
 import pathlib
 import sqlite3
 
-from schema import SCHEMA_DDL
+from .schema import SCHEMA_DDL
 
 DB_PATH = os.environ.get("AGENT_DB_PATH", "/home/chuan/mcp/data/agent_comms.db")
 

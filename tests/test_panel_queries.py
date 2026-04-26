@@ -4,11 +4,8 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 
-import sys, os
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
-
-from panel import fetch_unread_counts, _escalate_style
-from schema import SCHEMA_DDL
+from agent_comms_mcp.panel import fetch_unread_counts, _escalate_style
+from agent_comms_mcp.schema import SCHEMA_DDL
 
 
 # ---------------------------------------------------------------------------

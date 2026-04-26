@@ -1,7 +1,7 @@
 import json
 import sqlite3
 import pytest
-import server
+import agent_comms_mcp.server as server
 
 
 # ---------------------------------------------------------------------------

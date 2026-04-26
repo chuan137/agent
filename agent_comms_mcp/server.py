@@ -9,7 +9,7 @@ from typing import Optional
 
 from mcp.server.fastmcp import FastMCP
 
-from schema import SCHEMA_DDL
+from .schema import SCHEMA_DDL
 
 DB_PATH = os.environ.get("AGENT_DB_PATH", "/home/chuan/mcp/data/agent_comms.db")
 
@@ -295,5 +295,9 @@ async def report_idle(agent_id: str) -> str:
     return json.dumps({"ok": True, "agent_id": agent_id, "status": "idle"})
 
 
-if __name__ == "__main__":
+def main() -> None:
     mcp.run(transport="stdio")
+
+
+if __name__ == "__main__":
+    main()

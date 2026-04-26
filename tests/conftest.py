@@ -1,17 +1,10 @@
-import os
-import sys
-import tempfile
 import pytest
-
-# Ensure project root is on the path so `import server` and `import schema` work.
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+import agent_comms_mcp.server as server
 
 
 @pytest.fixture()
 def db_path(tmp_path):
     """Return a fresh temp DB path and wire server.py to use it."""
-    import server
-
     original_path = server.DB_PATH
     path = str(tmp_path / "test.db")
     server.DB_PATH = path
